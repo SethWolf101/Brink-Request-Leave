@@ -1,0 +1,5 @@
+# Add these lines to your existing .gitignore (if not already present):
+node_modules
+dist
+.env
+.env.local
