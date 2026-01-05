@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brink Admin Management</title>
+
+  <!-- Share preview (Brink) -->
+  <meta property="og:title" content="Brink Admin Management" />
+  <meta property="og:description" content="Manage administrators and department access" />
+  <meta property="og:image" content="https://brink-request-leave.vercel.app/brink-preview.png" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Brink Admin Management" />
+  <meta name="twitter:description" content="Manage administrators and department access" />
+  <meta name="twitter:image" content="https://brink-request-leave.vercel.app/brink-preview.png" />
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/brink-favicon-32.png" />
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0c10; color:#fff; }
+    header { padding:18px 20px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:14px; }
+    header img { height:28px; }
+    header .title { font-weight:800; font-size:18px; }
+    header a { color:#fff; text-decoration:none; opacity:0.9; }
+    main { max-width:1100px; margin: 0 auto; padding:20px; }
+    .card { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.10); border-radius:16px; padding:16px; }
+    .grid { display:grid; gap:14px; grid-template-columns: 1fr; }
+    @media (min-width: 900px){ .grid { grid-template-columns: 380px 1fr; } }
+    label { display:block; font-size:13px; opacity:0.9; margin-bottom:6px; }
+    input, select, button, textarea { width:100%; box-sizing:border-box; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.16); background: rgba(0,0,0,0.35); color:#fff; }
+    button { cursor:pointer; font-weight:700; background: rgba(255,255,255,0.10); }
+    button:hover { background: rgba(255,255,255,0.14); }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; }
+    .muted { opacity:0.8; font-size:13px; }
+    .pill { display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid rgba(255,255,255,0.18); font-size:12px; opacity:0.95; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding:10px; border-bottom: 1px solid rgba(255,255,255,0.08); vertical-align: top; }
+    th { text-align:left; font-size:12px; opacity:0.85; letter-spacing:0.02em; }
+    td { font-size:13px; }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .danger { border-color: rgba(255,80,80,0.45); }
+    .danger:hover { background: rgba(255,80,80,0.10); }
+    .ok { border-color: rgba(80,255,160,0.35); }
+    .ok:hover { background: rgba(80,255,160,0.10); }
+    .notice { padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); }
+    .hidden { display:none !important; }
+    .multiselect { height: 120px; }
+    code { background: rgba(255,255,255,0.08); padding:2px 6px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="/brinkweb.png" alt="Brink" />
+    <div class="title">Admin Management</div>
+    <div style="flex:1"></div>
+    <a href="/" title="Back to app">Back</a>
+  </header>
+
+  <main class="grid">
+    <section class="card" id="authCard">
+      <h3 style="margin:0 0 10px 0;">Sign in</h3>
+      <p class="muted" style="margin:0 0 14px 0;">
+        Sign in with your work email. You must be granted access by a primary admin to view and edit administrators.
+      </p>
+
+      <div class="notice" id="envNotice">
+        <div style="font-weight:700; margin-bottom:6px;">Setup required</div>
+        <div class="muted">
+          This page needs your Supabase URL + publishable key. Set them in <code>admin-management.js</code>.
+        </div>
+      </div>
+
+      <div style="height:10px"></div>
+
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="name@company.com" autocomplete="email" />
+      <div style="height:10px"></div>
+      <button id="sendLinkBtn">Send magic link</button>
+
+      <div style="height:14px"></div>
+      <div class="notice hidden" id="authStatus"></div>
+
+      <div style="height:14px"></div>
+      <button id="signOutBtn" class="hidden">Sign out</button>
+    </section>
+
+    <section class="card" id="adminCard">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <h3 style="margin:0;">Administrators</h3>
+        <span class="pill" id="mePill">Not signed in</span>
+        <span class="pill hidden" id="permPill"></span>
+        <div style="flex:1"></div>
+        <button id="refreshBtn" class="hidden">Refresh</button>
+      </div>
+
+      <div style="height:10px"></div>
+      <div class="notice hidden" id="noAccess">
+        You are signed in, but you do not have permission to view this page. Ask a primary admin to grant you access.
+      </div>
+
+      <div id="adminUi" class="hidden">
+        <div class="row" style="margin-top:10px;">
+          <div>
+            <h4 style="margin:10px 0;">Add / Update Admin</h4>
+            <div class="row">
+              <div>
+                <label>Email</label>
+                <input id="adminEmail" type="email" placeholder="admin@company.com" />
+              </div>
+              <div>
+                <label>Can manage admins?</label>
+                <select id="canManage">
+                  <option value="false">No</option>
+                  <option value="true">Yes</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="height:10px"></div>
+
+            <div class="row">
+              <div>
+                <label>Primary admin?</label>
+                <select id="isPrimary">
+                  <option value="false">No</option>
+                  <option value="true">Yes</option>
+                </select>
+                <div class="muted" style="margin-top:6px;">
+                  Only <b>seth.gutridge1@outlook.com</b> and <b>mark.gutridge@brink.eu</b> can change primary admin status.
+                </div>
+              </div>
+              <div>
+                <label>Departments (multi-select)</label>
+                <select id="deptSelect" class="multiselect" multiple></select>
+                <div class="muted" style="margin-top:6px;">
+                  Hold <b>Ctrl</b> to select multiple departments.
+                </div>
+              </div>
+            </div>
+
+            <div style="height:12px"></div>
+
+            <div class="actions">
+              <button id="saveAdminBtn" class="ok">Save admin</button>
+              <button id="clearFormBtn">Clear</button>
+            </div>
+
+            <div style="height:12px"></div>
+            <div class="notice hidden" id="formStatus"></div>
+          </div>
+
+          <div>
+            <h4 style="margin:10px 0;">Current Admins</h4>
+            <div class="muted" style="margin-bottom:8px;">
+              Only users with permission can view this list.
+            </div>
+
+            <div style="overflow:auto; border-radius:12px; border:1px solid rgba(255,255,255,0.10);">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Primary</th>
+                    <th>Can manage</th>
+                    <th>Departments</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="adminsTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+        <div class="notice">
+          <div style="font-weight:700; margin-bottom:6px;">Business-grade rules enforced in the database</div>
+          <div class="muted">
+            Row Level Security (RLS) + triggers enforce: who can view admins, who can change primary admins, and protect Seth/Mark from removal.
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/admin-management.js"></script>
+</body>
+</html>
