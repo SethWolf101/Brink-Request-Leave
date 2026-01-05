@@ -1,11 +1,20 @@
 // Inject a "Manage Admins" link into the existing Admin Panel UI without changing the app bundle.
-// This is intentionally lightweight and resilient for a static, pre-built SPA.
+// Guarded so it DOES NOT run on the homepage (which also contains an "Admin Panel" card).
 
 (function () {
   const LINK_ID = "brink-manage-admins-link";
   const TARGET_HREF = "/admin-management.html";
 
+  function isAdminRoute() {
+    const p = (window.location.pathname || "").toLowerCase();
+    const h = (window.location.hash || "").toLowerCase();
+    // Run only when the user is on an admin-related route (not the landing page).
+    return p.includes("admin") || h.includes("admin");
+  }
+
   function ensureLink() {
+    if (!isAdminRoute()) return;
+
     // If already added, do nothing
     if (document.getElementById(LINK_ID)) return;
 
@@ -15,42 +24,45 @@
 
     if (candidates.length === 0) return;
 
-    // Walk up a little to find a container to append into
-    let container = candidates[0];
-    for (let i = 0; i < 4 && container.parentElement; i++) container = container.parentElement;
+    // Choose the first candidate that is visible and on-screen-ish
+    const target = candidates.find(el => {
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    }) || candidates[0];
 
-    // Create a simple button-like link
+    // Create link element
+    const wrap = document.createElement("div");
+    wrap.id = LINK_ID;
+    wrap.style.marginTop = "10px";
+    wrap.style.fontSize = "14px";
+    wrap.style.opacity = "0.9";
+
     const a = document.createElement("a");
-    a.id = LINK_ID;
     a.href = TARGET_HREF;
     a.textContent = "Manage Admins";
-    a.style.display = "inline-block";
-    a.style.marginTop = "12px";
-    a.style.padding = "10px 14px";
-    a.style.borderRadius = "10px";
-    a.style.border = "1px solid rgba(255,255,255,0.25)";
-    a.style.textDecoration = "none";
-    a.style.color = "white";
-    a.style.fontWeight = "600";
-    a.style.background = "rgba(255,255,255,0.08)";
+    a.style.textDecoration = "underline";
+    a.style.cursor = "pointer";
 
-    const hint = document.createElement("div");
-    hint.style.marginTop = "6px";
-    hint.style.fontSize = "12px";
-    hint.style.opacity = "0.8";
-    hint.textContent = "Add/remove admins, set department access and primary admins.";
+    const desc = document.createElement("div");
+    desc.textContent = "Add/remove admins, set department access and primary admins.";
+    desc.style.fontSize = "12px";
+    desc.style.opacity = "0.75";
 
-    const wrap = document.createElement("div");
-    wrap.style.marginTop = "12px";
     wrap.appendChild(a);
-    wrap.appendChild(hint);
+    wrap.appendChild(desc);
 
+    // Append near the target, but avoid breaking layout
+    const container = target.parentElement || target;
     container.appendChild(wrap);
   }
 
   // Observe SPA route changes / re-renders
   const obs = new MutationObserver(() => ensureLink());
   obs.observe(document.documentElement, { childList: true, subtree: true });
+
+  // Also re-check when navigation occurs
+  window.addEventListener("hashchange", ensureLink);
+  window.addEventListener("popstate", ensureLink);
 
   // Initial attempt
   if (document.readyState === "loading") {
