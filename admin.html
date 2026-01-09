@@ -15,7 +15,6 @@
       <nav class="topbar__nav">
         <a href="/">Request Leave</a>
         <a href="/manager.html">Manager</a>
-        <a href="/admin-management.html">Admin Users</a>
       </nav>
     </header>
 
@@ -56,6 +55,7 @@
           <button class="btn" data-tab="departments">Departments</button>
           <button class="btn" data-tab="employees">Employees</button>
           <button class="btn" data-tab="managers">Managers</button>
+          <button class="btn" data-tab="admins">Admins</button>
         </div>
 
         <div id="tabStatus" class="notice hidden"></div>
@@ -173,6 +173,67 @@
             </div>
           </div>
         </div>
+
+        <div id="tab_admins" class="hidden" style="margin-top:14px;">
+          <div class="grid2">
+            <div>
+              <h3 style="margin:0 0 10px 0;">Add Admin</h3>
+              <div class="muted" style="margin-bottom:10px;">Add new admin users and assign department access.</div>
+
+              <label>Email</label>
+              <input id="adminEmail" type="email" placeholder="admin@company.com" />
+
+              <div style="margin-top:10px;">
+                <label>Department Access (leave empty for all)</label>
+                <select id="adminDeptSelect" multiple style="height:120px;"></select>
+                <div class="muted" style="margin-top:6px;">Hold <b>Ctrl</b> to select multiple departments.</div>
+              </div>
+
+              <div class="actions" style="margin-top:10px;">
+                <label style="display:flex; gap:8px; align-items:center; margin:0;">
+                  <input id="adminCanManage" type="checkbox" style="width:auto;" />
+                  <span>Can manage admins</span>
+                </label>
+              </div>
+
+              <div style="margin-top:10px;">
+                <label>Primary Admin</label>
+                <select id="adminIsPrimary">
+                  <option value="false">No</option>
+                  <option value="true">Yes</option>
+                </select>
+                <div class="muted" style="margin-top:6px;">Only protected primary admins can change this.</div>
+              </div>
+
+              <div class="actions" style="margin-top:12px;">
+                <button id="saveAdminBtn" class="btn btn--ok">Add Admin</button>
+                <button id="clearAdminBtn" class="btn">Clear</button>
+              </div>
+
+              <div id="adminFormStatus" class="notice hidden" style="margin-top:10px;"></div>
+              <div id="adminNoAccess" class="notice hidden" style="margin-top:10px;"></div>
+            </div>
+
+            <div>
+              <h3 style="margin:0 0 10px 0;">Admins</h3>
+              <div class="tableWrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Departments</th>
+                      <th>Permissions</th>
+                      <th style="width:120px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminsTbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </section>
     </main>
 

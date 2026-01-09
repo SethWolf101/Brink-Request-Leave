@@ -18,6 +18,7 @@ const tabs = {
   departments: document.getElementById("tab_departments"),
   employees: document.getElementById("tab_employees"),
   managers: document.getElementById("tab_managers"),
+  admins: document.getElementById("tab_admins"),
 };
 
 // Requests
@@ -44,9 +45,159 @@ const saveMgrBtn = document.getElementById("saveMgrBtn");
 const genPinBtn = document.getElementById("genPinBtn");
 const managersTbody = document.getElementById("managersTbody");
 
+// Admin Users (same dashboard, no separate page)
+const adminEmail = document.getElementById("adminEmail");
+const adminDeptSelect = document.getElementById("adminDeptSelect");
+const adminCanManage = document.getElementById("adminCanManage");
+const adminIsPrimary = document.getElementById("adminIsPrimary");
+const saveAdminBtn = document.getElementById("saveAdminBtn");
+const clearAdminBtn = document.getElementById("clearAdminBtn");
+const adminFormStatus = document.getElementById("adminFormStatus");
+const adminNoAccess = document.getElementById("adminNoAccess");
+const adminsTbody = document.getElementById("adminsTbody");
+
+const PROTECTED_PRIMARY_EMAILS = [
+  "seth.gutridge1@outlook.com",
+  "mark.gutridge@brink.eu",
+];
+
 let me = null;
 let myAdminRow = null;
 let departments = [];
+
+function normalizeEmail(v) {
+  return String(v || "").trim().toLowerCase();
+}
+
+function selectedAdminDeptIds() {
+  if (!adminDeptSelect) return [];
+  return Array.from(adminDeptSelect.selectedOptions)
+    .map(o => Number(o.value))
+    .filter(n => Number.isFinite(n));
+}
+
+function setSelectedAdminDeptIds(ids) {
+  if (!adminDeptSelect) return;
+  const set = new Set((ids || []).map(Number));
+  Array.from(adminDeptSelect.options).forEach(o => {
+    o.selected = set.has(Number(o.value));
+  });
+}
+
+function canChangePrimary() {
+  return PROTECTED_PRIMARY_EMAILS.includes(normalizeEmail(me?.email));
+}
+
+function clearAdminForm() {
+  if (!adminEmail) return;
+  adminEmail.value = "";
+  adminCanManage.checked = false;
+  adminIsPrimary.value = "false";
+  setSelectedAdminDeptIds([]);
+  setNotice(adminFormStatus, "", false);
+}
+
+function deptNamesFromIds(ids) {
+  if (!ids || !ids.length) return "All departments";
+  const map = new Map(departments.map(d => [Number(d.id), d.name]));
+  return ids.map(i => map.get(Number(i)) || String(i)).join(", ");
+}
+
+async function loadAdmins() {
+  if (!me?.email) return;
+  if (!myAdminRow?.can_manage_admins) {
+    show(adminNoAccess, true);
+    adminNoAccess.textContent = "You don't have permission to manage admins. Ask a primary admin to enable 'Can manage admins' for your account.";
+    adminsTbody.innerHTML = `<tr><td colspan="5" style="opacity:0.8">No access.</td></tr>`;
+    show(saveAdminBtn, false);
+    return;
+  }
+
+  show(adminNoAccess, false);
+  show(saveAdminBtn, true);
+
+  // Only protected primary admins can change primary status
+  adminIsPrimary.disabled = !canChangePrimary();
+
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("email,is_primary,can_manage_admins,department_ids")
+    .order("is_primary", { ascending: false })
+    .order("email", { ascending: true });
+  if (error) throw error;
+  renderAdmins(data || []);
+}
+
+function renderAdmins(rows) {
+  adminsTbody.innerHTML = "";
+  if (!rows.length) {
+    adminsTbody.innerHTML = `<tr><td colspan="5" style="opacity:0.8">No admins found.</td></tr>`;
+    return;
+  }
+
+  for (const a of rows) {
+    const email = normalizeEmail(a.email);
+    const role = a.is_primary ? "Primary Admin" : "Admin";
+    const perms = a.can_manage_admins ? "Can manage admins" : "";
+    const deptText = (a.department_ids && a.department_ids.length) ? deptNamesFromIds(a.department_ids) : "All departments";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(email)}</td>
+      <td><span class="pill">${escapeHtml(role)}</span></td>
+      <td>${escapeHtml(deptText)}</td>
+      <td>${perms ? `<span class="pill">${escapeHtml(perms)}</span>` : `<span class="muted">—</span>`}</td>
+      <td>
+        <div class="actions">
+          <button class="btn" data-admin-action="edit" data-email="${escapeHtml(email)}">Edit</button>
+          <button class="btn btn--danger" data-admin-action="delete" data-email="${escapeHtml(email)}">Delete</button>
+        </div>
+      </td>
+    `;
+
+    const delBtn = tr.querySelector('button[data-admin-action="delete"]');
+    if (PROTECTED_PRIMARY_EMAILS.includes(email)) {
+      delBtn.disabled = true;
+      delBtn.title = "Protected primary admin";
+    }
+
+    adminsTbody.appendChild(tr);
+  }
+}
+
+async function saveAdmin() {
+  setNotice(adminFormStatus, "", false);
+  const email = normalizeEmail(adminEmail.value);
+  if (!email) return setNotice(adminFormStatus, "Enter an email.");
+
+  const is_primary = adminIsPrimary.value === "true";
+  if (is_primary && !canChangePrimary()) {
+    return setNotice(adminFormStatus, "Only protected primary admins can set Primary Admin.");
+  }
+
+  const payload = {
+    email,
+    can_manage_admins: !!adminCanManage.checked,
+    is_primary,
+    department_ids: selectedAdminDeptIds(),
+  };
+
+  const { error } = await supabase.from("admin_users").upsert(payload, { onConflict: "email" });
+  if (error) throw error;
+
+  clearAdminForm();
+  await loadAdminRow();
+  await loadAdmins();
+  setNotice(adminFormStatus, "✅ Admin saved.");
+}
+
+async function removeAdmin(email) {
+  const e = normalizeEmail(email);
+  if (!e) return;
+  const { error } = await supabase.from("admin_users").delete().eq("email", e);
+  if (error) throw error;
+  await loadAdmins();
+}
 
 function escapeHtml(s) {
   return String(s ?? "")
@@ -152,6 +303,12 @@ async function loadDepartments() {
   mgrDept.innerHTML = "";
   mgrDept.appendChild(opt("", "Select..."));
   departments.forEach(d => mgrDept.appendChild(opt(d.id, d.name)));
+
+  // Admin users department multi-select
+  if (adminDeptSelect) {
+    adminDeptSelect.innerHTML = "";
+    departments.forEach(d => adminDeptSelect.appendChild(opt(d.id, d.name)));
+  }
 }
 
 function deptName(id) {
@@ -397,6 +554,7 @@ async function refreshAll() {
   await loadEmployeesTable();
   await loadManagers();
   await loadRequests();
+  await loadAdmins();
 }
 
 async function initRealtime() {
@@ -434,6 +592,8 @@ addEmpBtn.addEventListener("click", () => addEmployee().catch(e => setNotice(tab
 refreshAllBtn.addEventListener("click", () => refreshAll().catch(e => setNotice(tabStatus, e.message)));
 genPinBtn.addEventListener("click", genPin);
 saveMgrBtn.addEventListener("click", () => saveManager().catch(e => setNotice(tabStatus, e.message)));
+if (saveAdminBtn) saveAdminBtn.addEventListener("click", () => saveAdmin().catch(e => setNotice(adminFormStatus, `❌ ${e.message}`)));
+if (clearAdminBtn) clearAdminBtn.addEventListener("click", () => clearAdminForm());
 
 tabButtons.forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
 
@@ -492,6 +652,37 @@ managersTbody.addEventListener("click", async (ev) => {
   } catch (err) {
     console.error(err);
     setNotice(tabStatus, `❌ ${err?.message || "Failed"}`);
+  }
+});
+
+adminsTbody.addEventListener("click", async (ev) => {
+  const btn = ev.target?.closest("button[data-admin-action]");
+  if (!btn) return;
+  const action = btn.dataset.adminAction;
+  const email = btn.dataset.email;
+  try {
+    if (action === "delete") {
+      await removeAdmin(email);
+      return;
+    }
+    if (action === "edit") {
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("email,is_primary,can_manage_admins,department_ids")
+        .eq("email", normalizeEmail(email))
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return;
+      adminEmail.value = data.email || "";
+      adminCanManage.checked = !!data.can_manage_admins;
+      adminIsPrimary.value = String(!!data.is_primary);
+      setSelectedAdminDeptIds(data.department_ids || []);
+      setNotice(adminFormStatus, "Editing admin...", true);
+      setTab("admins");
+    }
+  } catch (err) {
+    console.error(err);
+    setNotice(adminFormStatus, `❌ ${err?.message || "Failed"}`);
   }
 });
 
