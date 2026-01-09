@@ -1,0 +1,31 @@
+BRINK Leave System (this zip)
+
+Why changes were not showing for other people
+-------------------------------------------
+Your previous main app bundle wasn't using Supabase for leave requests (it stored data locally in the browser),
+so each person had their own separate data. This version uses Supabase tables + realtime, so everyone sees the same changes.
+
+What to run in Supabase (SQL Editor)
+-----------------------------------
+1) Run: supabase/schema.sql
+2) Run: supabase/admins.sql
+3) Run: supabase/app_rls_and_managers.sql
+
+Then...
+------
+Open:
+ - /                -> Request Leave page (public)
+ - /manager.html    -> Manager dashboard (email magic link + PIN)
+ - /admin.html      -> Admin dashboard (email magic link)
+ - /admin-management.html -> Add/remove admins + admin department access
+
+Manager PINs
+------------
+In Admin Dashboard -> Managers tab
+ - Enter manager email + department + PIN, click "Save manager"
+ - Manager signs in (magic link) and then enters the PIN to unlock.
+
+Notes
+-----
+This is a static site. It works on Vercel/Netlify as-is.
+Supabase URL + publishable key are stored in js/config.js.

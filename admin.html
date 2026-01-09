@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BRINK Admin</title>
+    <link rel="icon" type="image/png" href="./brink-favicon-32.png" />
+    <link rel="stylesheet" href="./styles/app.css" />
+  </head>
+  <body class="bgImage">
+    <header class="topbar">
+      <img class="brand" src="/brinkweb.png" alt="BRINK" />
+      <div class="topbar__title">Admin Dashboard</div>
+      <div class="topbar__spacer"></div>
+      <nav class="topbar__nav">
+        <a href="/">Request Leave</a>
+        <a href="/manager.html">Manager</a>
+        <a href="/admin-management.html">Admin Users</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="card" id="authCard">
+        <h2>Sign in</h2>
+        <p class="muted">Sign in with your work email. You must already be listed in <b>Admin Users</b> to use this dashboard.</p>
+
+        <div class="grid2">
+          <div>
+            <label>Email</label>
+            <input id="email" type="email" placeholder="name@company.com" autocomplete="email" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="sendLinkBtn" class="btn btn--ok">Send magic link</button>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:10px;">
+          <button id="signOutBtn" class="btn hidden">Sign out</button>
+          <span class="pill" id="mePill">Not signed in</span>
+          <span class="pill hidden" id="rolePill"></span>
+        </div>
+        <div id="authStatus" class="notice hidden"></div>
+      </section>
+
+      <section class="card hidden" id="adminUi" style="margin-top:16px;">
+        <div class="rowBetween">
+          <div>
+            <h2 style="margin-bottom:4px;">Manage data</h2>
+            <div class="muted">Departments, employees, managers, and leave requests (pending + approved).</div>
+          </div>
+          <button id="refreshAllBtn" class="btn">Refresh</button>
+        </div>
+
+        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn" data-tab="requests">Requests</button>
+          <button class="btn" data-tab="departments">Departments</button>
+          <button class="btn" data-tab="employees">Employees</button>
+          <button class="btn" data-tab="managers">Managers</button>
+        </div>
+
+        <div id="tabStatus" class="notice hidden"></div>
+
+        <div id="tab_requests" style="margin-top:14px;">
+          <div class="grid2">
+            <div>
+              <label>Filter department</label>
+              <select id="filterDept"></select>
+            </div>
+            <div>
+              <label>View</label>
+              <select id="filterStatus">
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="tableWrap" style="margin-top:12px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Department</th>
+                  <th>Dates</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="requestsAdminTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab_departments" class="hidden" style="margin-top:14px;">
+          <div class="grid2">
+            <div>
+              <h3 style="margin:0 0 10px 0;">Add department</h3>
+              <label>Name</label>
+              <input id="newDeptName" placeholder="e.g. Kitchen" />
+              <div class="actions">
+                <button id="addDeptBtn" class="btn btn--ok">Add</button>
+              </div>
+            </div>
+            <div>
+              <h3 style="margin:0 0 10px 0;">Edit departments</h3>
+              <div class="tableWrap">
+                <table>
+                  <thead>
+                    <tr><th>Name</th><th style="width:220px;">Actions</th></tr>
+                  </thead>
+                  <tbody id="departmentsTbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab_employees" class="hidden" style="margin-top:14px;">
+          <div class="grid2">
+            <div>
+              <h3 style="margin:0 0 10px 0;">Add employee</h3>
+              <label>Full name</label>
+              <input id="newEmpName" placeholder="e.g. Jamie Smith" />
+              <label style="margin-top:10px;">Department</label>
+              <select id="newEmpDept"></select>
+              <div class="actions">
+                <button id="addEmpBtn" class="btn btn--ok">Add</button>
+              </div>
+            </div>
+            <div>
+              <h3 style="margin:0 0 10px 0;">Edit employees</h3>
+              <div class="tableWrap">
+                <table>
+                  <thead>
+                    <tr><th>Name</th><th>Department</th><th style="width:240px;">Actions</th></tr>
+                  </thead>
+                  <tbody id="employeesTbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab_managers" class="hidden" style="margin-top:14px;">
+          <div class="grid2">
+            <div>
+              <h3 style="margin:0 0 10px 0;">Create / reset manager PIN</h3>
+              <label>Manager email</label>
+              <input id="mgrEmail" type="email" placeholder="manager@company.com" />
+              <label style="margin-top:10px;">Department</label>
+              <select id="mgrDept"></select>
+              <label style="margin-top:10px;">PIN code</label>
+              <input id="mgrPin" placeholder="e.g. 528194" />
+              <div class="actions">
+                <button id="saveMgrBtn" class="btn btn--ok">Save manager</button>
+                <button id="genPinBtn" class="btn">Generate PIN</button>
+              </div>
+              <div class="muted">Managers sign in with email magic link, then enter this PIN to unlock their dashboard.</div>
+            </div>
+            <div>
+              <h3 style="margin:0 0 10px 0;">Managers list</h3>
+              <div class="tableWrap">
+                <table>
+                  <thead>
+                    <tr><th>Email</th><th>Department</th><th style="width:180px;">Actions</th></tr>
+                  </thead>
+                  <tbody id="managersTbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/js/admin.js"></script>
+  </body>
+</html>
