@@ -3,88 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BRINK Leave Management</title>
-    <meta name="description" content="Request leave and manage approvals" />
 
-    <link rel="icon" type="image/png" href="./brink-favicon-32.png" />
-    <link rel="stylesheet" href="./styles/app.css" />
+    <title>Brink Leave Management</title>
+    <meta name="description" content="Leave request and approval portal" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Brink Leave Management" />
+    <meta property="og:description" content="Leave request and approval portal" />
+    <meta property="og:image" content="https://brink-request-leave.vercel.app/brink-preview.png" />
+    <meta property="og:url" content="https://brink-request-leave.vercel.app/" />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Brink Leave Management" />
+    <meta name="twitter:description" content="Leave request and approval portal" />
+    <meta name="twitter:image" content="https://brink-request-leave.vercel.app/brink-preview.png" />
+
+    <script type="module" crossorigin src="/assets/index-rK7ujP6W.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-D-bsUrM5.css">
   </head>
+
   <body>
-    <header class="topbar">
-      <img class="brand" src="/brinkweb.png" alt="BRINK" />
-      <div class="topbar__title">Leave Request</div>
-      <div class="topbar__spacer"></div>
-      <nav class="topbar__nav">
-        <a href="/admin.html">Admin</a>
-        <a href="/manager.html">Manager</a>
-      </nav>
-    </header>
-
-    <main class="container">
-      <section class="card">
-        <h2>Request leave</h2>
-        <p class="muted">Choose your department and name, then submit your dates.</p>
-
-        <div class="grid2">
-          <div>
-            <label>Department</label>
-            <select id="departmentSelect"></select>
-          </div>
-          <div>
-            <label>Employee</label>
-            <select id="employeeSelect"></select>
-          </div>
-        </div>
-
-        <div class="grid2" style="margin-top: 12px;">
-          <div>
-            <label>Start date</label>
-            <input id="startDate" type="date" />
-          </div>
-          <div>
-            <label>End date</label>
-            <input id="endDate" type="date" />
-          </div>
-        </div>
-
-        <div style="margin-top: 12px;">
-          <label>Reason (optional)</label>
-          <textarea id="reason" rows="3" placeholder="Short reason..."></textarea>
-        </div>
-
-        <div class="actions">
-          <button id="submitBtn" class="btn btn--ok">Submit request</button>
-          <button id="clearBtn" class="btn">Clear</button>
-        </div>
-
-        <div id="status" class="notice hidden"></div>
-      </section>
-
-      <section class="card" style="margin-top: 16px;">
-        <div class="rowBetween">
-          <div>
-            <h2 style="margin-bottom: 4px;">Recent requests</h2>
-            <div class="muted">Updates live when managers/admins approve or delete.</div>
-          </div>
-          <button id="refreshBtn" class="btn">Refresh</button>
-        </div>
-        <div class="tableWrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Department</th>
-                <th>Dates</th>
-                <th>Status</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody id="requestsTbody"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-
-    <script type="module" src="/js/app.js"></script>
+    <div id="root"></div>
+    <script src="/admin-enhancements.js" defer></script>
   </body>
 </html>

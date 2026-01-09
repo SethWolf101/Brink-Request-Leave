@@ -51,6 +51,23 @@
     wrap.appendChild(a);
     wrap.appendChild(desc);
 
+    // Also link to the full Admin Dashboard (legacy static page)
+    const a2 = document.createElement("a");
+    a2.href = "/admin.html";
+    a2.textContent = "Admin Dashboard";
+    a2.style.textDecoration = "underline";
+    a2.style.cursor = "pointer";
+    a2.style.display = "inline-block";
+    a2.style.marginTop = "8px";
+
+    const desc2 = document.createElement("div");
+    desc2.textContent = "Manage departments, employees, managers and requests.";
+    desc2.style.fontSize = "12px";
+    desc2.style.opacity = "0.75";
+
+    wrap.appendChild(a2);
+    wrap.appendChild(desc2);
+
     // Append near the target, but avoid breaking layout
     const container = target.parentElement || target;
     container.appendChild(wrap);
