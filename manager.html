@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BRINK Manager</title>
+    <link rel="icon" type="image/png" href="./brink-favicon-32.png" />
+    <link rel="stylesheet" href="./styles/app.css" />
+  </head>
+  <body class="bgImage">
+    <header class="topbar">
+      <img class="brand" src="/brinkweb.png" alt="BRINK" />
+      <div class="topbar__title">Manager Dashboard</div>
+      <div class="topbar__spacer"></div>
+      <nav class="topbar__nav">
+        <a href="/">Request Leave</a>
+        <a href="/admin.html">Admin</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="card" id="authCard">
+        <h2>Sign in</h2>
+        <p class="muted">Step 1: sign in with your email. Step 2: enter your manager PIN.</p>
+
+        <div class="grid2">
+          <div>
+            <label>Email</label>
+            <input id="email" type="email" placeholder="manager@company.com" autocomplete="email" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="sendLinkBtn" class="btn btn--ok">Send magic link</button>
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-top:12px;">
+          <div>
+            <label>Manager PIN</label>
+            <input id="pin" placeholder="6 digit PIN" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="unlockBtn" class="btn">Unlock dashboard</button>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:10px;">
+          <button id="signOutBtn" class="btn hidden">Sign out</button>
+          <span class="pill" id="mePill">Not signed in</span>
+          <span class="pill hidden" id="deptPill"></span>
+        </div>
+        <div id="authStatus" class="notice hidden"></div>
+      </section>
+
+      <section class="card hidden" id="mgrUi" style="margin-top:16px;">
+        <div class="rowBetween">
+          <div>
+            <h2 style="margin-bottom:4px;">Requests for your department</h2>
+            <div class="muted">Approve/reject, and view approved requests.</div>
+          </div>
+          <button id="refreshBtn" class="btn">Refresh</button>
+        </div>
+
+        <div class="grid2" style="margin-top:12px;">
+          <div>
+            <label>View</label>
+            <select id="statusFilter">
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="muted" id="hint"></div>
+          </div>
+        </div>
+
+        <div class="tableWrap" style="margin-top:12px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Dates</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="requestsTbody"></tbody>
+          </table>
+        </div>
+
+        <div id="mgrStatus" class="notice hidden"></div>
+      </section>
+    </main>
+
+    <script type="module" src="/js/manager.js"></script>
+  </body>
+</html>
