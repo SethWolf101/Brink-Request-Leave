@@ -30,15 +30,15 @@ using (lower(email) = lower(public.current_email()));
 
 -- Admins can manage managers
 drop policy if exists "manager_users_manage_admins" on public.manager_users;
-create policy "manager_users_manage_admins"
+create policy "manager_users_manage_primary_admins"
 on public.manager_users
 for all
 to authenticated
 using (
-  exists (select 1 from public.admin_users a where a.email = lower(public.current_email()))
+  public.is_primary_admin()
 )
 with check (
-  exists (select 1 from public.admin_users a where a.email = lower(public.current_email()))
+  public.is_primary_admin()
 );
 
 -- 2) RPC: create/update manager with a new PIN (admins only)
@@ -54,7 +54,7 @@ begin
   if actor = '' then
     raise exception 'Not authenticated';
   end if;
-  if not exists (select 1 from public.admin_users a where a.email = actor) then
+  if not exists (select 1 from public.admin_users a where a.email = actor and a.is_primary = true) then
     raise exception 'Not allowed';
   end if;
 
@@ -127,12 +127,12 @@ using (true);
 
 -- Departments: only admins can write
 drop policy if exists "departments_write_admins" on public.departments;
-create policy "departments_write_admins"
+create policy "departments_write_primary_admins"
 on public.departments
 for all
 to authenticated
-using (exists (select 1 from public.admin_users a where a.email = lower(public.current_email())))
-with check (exists (select 1 from public.admin_users a where a.email = lower(public.current_email())));
+using (public.is_primary_admin())
+with check (public.is_primary_admin());
 
 -- Employees: anyone can read (used by request form)
 drop policy if exists "employees_read_all" on public.employees;
@@ -144,12 +144,12 @@ using (true);
 
 -- Employees: only admins can write
 drop policy if exists "employees_write_admins" on public.employees;
-create policy "employees_write_admins"
+create policy "employees_write_primary_admins"
 on public.employees
 for all
 to authenticated
-using (exists (select 1 from public.admin_users a where a.email = lower(public.current_email())))
-with check (exists (select 1 from public.admin_users a where a.email = lower(public.current_email())));
+using (public.is_primary_admin())
+with check (public.is_primary_admin());
 
 -- Leave requests: anyone can create
 drop policy if exists "leave_requests_insert_anon" on public.leave_requests;
@@ -165,8 +165,14 @@ create policy "leave_requests_admin_all"
 on public.leave_requests
 for all
 to authenticated
-using (exists (select 1 from public.admin_users a where a.email = lower(public.current_email())))
-with check (exists (select 1 from public.admin_users a where a.email = lower(public.current_email())));
+using (
+  exists (select 1 from public.admin_users a where a.email = lower(public.current_email()))
+  and public.admin_allows_department(leave_requests.department_id)
+)
+with check (
+  exists (select 1 from public.admin_users a where a.email = lower(public.current_email()))
+  and public.admin_allows_department(leave_requests.department_id)
+);
 
 -- Leave requests: managers can read/update only their department
 drop policy if exists "leave_requests_manager_read_write" on public.leave_requests;

@@ -1,16 +1,23 @@
 -- Admin management for Brink Leave System (FIXED FOR SQL EDITOR + BUSINESS RULES)
 -- Run this file in Supabase SQL Editor AFTER creating departments/employees/leave_requests tables.
 
+-- Needed for password-style hashing of admin PINs
+create extension if not exists pgcrypto;
+
 -- 1) Admin table
 create table if not exists public.admin_users (
   email text primary key,
   user_id uuid unique,
   is_primary boolean not null default false,
   can_manage_admins boolean not null default false,
+  pin_hash text,
   department_ids bigint[] not null default '{}'::bigint[],
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Backfill for older installs
+alter table public.admin_users add column if not exists pin_hash text;
 
 -- Keep updated_at current
 create or replace function public.set_updated_at()
@@ -34,6 +41,130 @@ stable
 as $$
   select lower(coalesce(auth.jwt() ->> 'email', ''));
 $$;
+
+-- Primary helper
+create or replace function public.is_primary_admin()
+returns boolean
+language sql
+stable
+as $$
+  select exists(
+    select 1
+    from public.admin_users a
+    where a.email = lower(public.current_email())
+      and a.is_primary = true
+  );
+$$;
+
+-- Department access helper
+create or replace function public.admin_allows_department(p_department_id bigint)
+returns boolean
+language sql
+stable
+as $$
+  select exists (
+    select 1
+    from public.admin_users a
+    where a.email = lower(public.current_email())
+      and (
+        coalesce(array_length(a.department_ids, 1), 0) = 0
+        or p_department_id = any(a.department_ids)
+      )
+  );
+$$;
+
+-- RPC: create/update admin with a new 6-digit PIN + dept access (PRIMARY ADMINS ONLY)
+create or replace function public.upsert_admin_user(
+  p_email text,
+  p_pin text,
+  p_is_primary boolean,
+  p_department_ids bigint[]
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  actor text := lower(coalesce(current_setting('request.jwt.claim.email', true), ''));
+  is_actor_primary boolean;
+begin
+  if actor = '' then
+    raise exception 'Not authenticated';
+  end if;
+
+  select exists(
+    select 1 from public.admin_users a
+    where a.email = actor and a.is_primary = true
+  ) into is_actor_primary;
+
+  if not is_actor_primary then
+    raise exception 'Not allowed';
+  end if;
+
+  if p_email is null or trim(p_email) = '' then
+    raise exception 'Email is required';
+  end if;
+  if p_pin is null or p_pin !~ '^[0-9]{6}$' then
+    raise exception 'PIN must be exactly 6 digits';
+  end if;
+
+  insert into public.admin_users(email, is_primary, can_manage_admins, department_ids, pin_hash)
+  values (
+    lower(p_email),
+    coalesce(p_is_primary, false),
+    coalesce(p_is_primary, false),
+    coalesce(p_department_ids, '{}'::bigint[]),
+    crypt(p_pin, gen_salt('bf'))
+  )
+  on conflict (email) do update
+    set is_primary = excluded.is_primary,
+        can_manage_admins = excluded.can_manage_admins,
+        department_ids = excluded.department_ids,
+        pin_hash = excluded.pin_hash,
+        updated_at = now();
+end;
+$$;
+
+revoke all on function public.upsert_admin_user(text, text, boolean, bigint[]) from public;
+grant execute on function public.upsert_admin_user(text, text, boolean, bigint[]) to authenticated;
+
+-- RPC: verify admin PIN (admin must be signed in with Supabase Auth)
+create or replace function public.verify_admin_pin(p_pin text)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  actor text := lower(coalesce(current_setting('request.jwt.claim.email', true), ''));
+  r record;
+begin
+  if actor = '' then
+    raise exception 'Not authenticated';
+  end if;
+
+  select * into r from public.admin_users a where lower(a.email) = actor;
+  if not found then
+    return json_build_object('ok', false);
+  end if;
+  if r.pin_hash is null then
+    return json_build_object('ok', false);
+  end if;
+  if crypt(p_pin, r.pin_hash) <> r.pin_hash then
+    return json_build_object('ok', false);
+  end if;
+
+  return json_build_object(
+    'ok', true,
+    'is_primary', coalesce(r.is_primary, false),
+    'department_ids', coalesce(r.department_ids, '{}'::bigint[])
+  );
+end;
+$$;
+
+revoke all on function public.verify_admin_pin(text) from public;
+grant execute on function public.verify_admin_pin(text) to authenticated;
 
 -- 3) Enforce business rules for primary admins (FIXED: allows SQL Editor/migrations)
 create or replace function public.enforce_admin_rules()

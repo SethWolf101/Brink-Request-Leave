@@ -16,8 +16,8 @@ Then...
 Open:
  - /                -> Request Leave page (public)
  - /manager.html    -> Manager dashboard (email magic link + PIN)
- - /admin.html      -> Admin dashboard (email magic link)
- - /admin-management.html -> Add/remove admins + admin department access
+ - Admin dashboard is inside the main app (no separate /admin.html page)
+ - Primary admin tools now open inside the admin dashboard (no separate admin-management page)
 
 Manager PINs
 ------------
