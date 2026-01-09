@@ -2,31 +2,89 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="./favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
     <title>BRINK Leave Management</title>
-    <meta name="description" content="BRINK Leave request and admin portal" />
-    <meta name="author" content="BRINK" />
+    <meta name="description" content="Request leave and manage approvals" />
 
-    <!-- TODO: Update og:title to match your application name -->
-    
-    
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/brink-preview.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@BRINK" />
-    <meta name="twitter:image" content="/brink-preview.png" />
-    <meta property="og:title" content="BRINK Leave Management" />
-  <meta name="twitter:title" content="test">
-  <meta property="og:description" content="BRINK Generated Project">
-  <meta name="twitter:description" content="BRINK Generated Project">
-  <script type="module" crossorigin src="./assets/index-CmRxaXQi.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-PNFU2Ona.css">
-</head>
-
+    <link rel="icon" type="image/png" href="./brink-favicon-32.png" />
+    <link rel="stylesheet" href="./styles/app.css" />
+  </head>
   <body>
-    <div id="root"></div>
+    <header class="topbar">
+      <img class="brand" src="/brinkweb.png" alt="BRINK" />
+      <div class="topbar__title">Leave Request</div>
+      <div class="topbar__spacer"></div>
+      <nav class="topbar__nav">
+        <a href="/admin.html">Admin</a>
+        <a href="/manager.html">Manager</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <h2>Request leave</h2>
+        <p class="muted">Choose your department and name, then submit your dates.</p>
+
+        <div class="grid2">
+          <div>
+            <label>Department</label>
+            <select id="departmentSelect"></select>
+          </div>
+          <div>
+            <label>Employee</label>
+            <select id="employeeSelect"></select>
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-top: 12px;">
+          <div>
+            <label>Start date</label>
+            <input id="startDate" type="date" />
+          </div>
+          <div>
+            <label>End date</label>
+            <input id="endDate" type="date" />
+          </div>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <label>Reason (optional)</label>
+          <textarea id="reason" rows="3" placeholder="Short reason..."></textarea>
+        </div>
+
+        <div class="actions">
+          <button id="submitBtn" class="btn btn--ok">Submit request</button>
+          <button id="clearBtn" class="btn">Clear</button>
+        </div>
+
+        <div id="status" class="notice hidden"></div>
+      </section>
+
+      <section class="card" style="margin-top: 16px;">
+        <div class="rowBetween">
+          <div>
+            <h2 style="margin-bottom: 4px;">Recent requests</h2>
+            <div class="muted">Updates live when managers/admins approve or delete.</div>
+          </div>
+          <button id="refreshBtn" class="btn">Refresh</button>
+        </div>
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Dates</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody id="requestsTbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/js/app.js"></script>
   </body>
 </html>
